@@ -5,6 +5,26 @@ spring:
   application:
     name: spring-ai-app
   
+  cloud:
+    sentinel:
+      transport:
+        # Sentinel Dashboard 地址（本地部署）
+        dashboard: localhost:8718
+        # 客户端监控 API 端口
+        port: 8719
+      # 立即初始化
+      eager: true
+      # Web 请求拦截器配置
+      web:
+        servlet:
+          enabled: true
+        filter:
+          enabled: true
+          url-patterns: /**
+    # Spring Cloud 兼容性检查（禁用，因为 Spring Boot 3.5.4 较新）
+    compatibility-verifier:
+      enabled: false
+  
   ai:
     openai:
       # OpenAI API配置
@@ -23,6 +43,7 @@ logging:
     root: INFO
     com.example.spring_ai_app: DEBUG
     org.springframework.ai: DEBUG
+    com.alibaba.csp.sentinel: DEBUG
 
 # Actuator监控端点配置
 management:
