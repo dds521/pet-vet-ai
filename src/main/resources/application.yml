@@ -1,3 +1,6 @@
+server:
+  port: ${SERVER_PORT:48080} # 服务端口，支持通过环境变量配置，默认38080
+
 spring:
   application:
     name: pet-vet-ai

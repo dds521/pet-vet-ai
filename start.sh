@@ -78,17 +78,20 @@ fi
 $MVN_CMD clean spring-boot:run > "$LOG_FILE" 2>&1 &
 MAVEN_PID=$!
 
+# 获取服务端口（从环境变量或使用默认值）
+SERVER_PORT=${SERVER_PORT:-48080}
+
 # 等待服务启动
-echo "⏳ 等待服务启动..."
+echo "⏳ 等待服务启动（端口: $SERVER_PORT）..."
 MAX_WAIT=120  # 最大等待时间（秒）
 WAIT_COUNT=0
 STARTED=false
 
 while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
     # 检查端口是否被占用
-    if lsof -i :8080 > /dev/null 2>&1; then
+    if lsof -i :$SERVER_PORT > /dev/null 2>&1; then
         # 检查 API 是否可访问
-        if curl -s http://localhost:8080/api/ping > /dev/null 2>&1; then
+        if curl -s http://localhost:$SERVER_PORT/api/ping > /dev/null 2>&1; then
             STARTED=true
             break
         fi
@@ -123,13 +126,13 @@ if [ "$STARTED" = true ]; then
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
     echo "📍 服务信息："
-    echo "   - 服务地址: http://localhost:8080"
-    echo "   - 健康检查: http://localhost:8080/api/ping"
-    echo "   - Actuator: http://localhost:8080/actuator/health"
-    echo "   - 宠物诊断: http://localhost:8080/api/pet/diagnose"
+    echo "   - 服务地址: http://localhost:$SERVER_PORT"
+    echo "   - 健康检查: http://localhost:$SERVER_PORT/api/ping"
+    echo "   - Actuator: http://localhost:$SERVER_PORT/actuator/health"
+    echo "   - 宠物诊断: http://localhost:$SERVER_PORT/api/pet/diagnose"
     echo ""
     echo "🔧 测试命令："
-    echo "   curl http://localhost:8080/api/ping"
+    echo "   curl http://localhost:$SERVER_PORT/api/ping"
     echo ""
     if [ -z "$OPENAI_API_KEY" ] || [ "$OPENAI_API_KEY" = "dummy-key" ]; then
         echo "⚠️  提示: OPENAI_API_KEY 未配置，AI 功能不可用"

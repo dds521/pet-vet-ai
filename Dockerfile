@@ -1,6 +1,6 @@
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 COPY target/*.jar app.jar
-EXPOSE 8080
+EXPOSE ${SERVER_PORT:-48080}
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
