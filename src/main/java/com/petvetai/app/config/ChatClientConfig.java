@@ -1,4 +1,4 @@
-package com.example.spring_ai_app.config;
+package com.petvetai.app.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.example.spring_ai_app.config;
+package com.petvetai.app.config;
 
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;

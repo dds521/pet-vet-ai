@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "=========================================="
-echo "Spring AI 项目启动脚本"
+echo "PetVetAI 项目启动脚本"
 echo "=========================================="
 
 # 加载 Java 版本管理脚本
@@ -57,12 +57,12 @@ echo "=========================================="
 echo ""
 
 # 创建临时日志文件
-LOG_FILE=$(mktemp /tmp/spring-ai-startup-XXXXXX.log)
+LOG_FILE=$(mktemp /tmp/pet-vet-ai-startup-XXXXXX.log)
 echo "📝 启动日志: $LOG_FILE"
 echo ""
 
 # 在后台启动项目
-echo "🚀 正在启动 Spring AI 服务..."
+echo "🚀 正在启动 PetVetAI 服务..."
 
 # 检查是否有 mvnw，如果没有则使用系统的 mvn
 if [ -f "./mvnw" ]; then
@@ -118,7 +118,7 @@ if [ "$STARTED" = true ]; then
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║                                                            ║"
-    echo "║          ✅  Spring AI 服务启动成功！                        ║"
+    echo "║          ✅  PetVetAI 服务启动成功！                        ║"
     echo "║                                                            ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
@@ -126,7 +126,7 @@ if [ "$STARTED" = true ]; then
     echo "   - 服务地址: http://localhost:8080"
     echo "   - 健康检查: http://localhost:8080/api/ping"
     echo "   - Actuator: http://localhost:8080/actuator/health"
-    echo "   - AI 接口:  http://localhost:8080/api/ai/quick?q=你的问题"
+    echo "   - 宠物诊断: http://localhost:8080/api/pet/diagnose"
     echo ""
     echo "🔧 测试命令："
     echo "   curl http://localhost:8080/api/ping"
