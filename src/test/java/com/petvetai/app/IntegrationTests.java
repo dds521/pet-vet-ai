@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ActiveProfiles("test") // 使用 application-test.yml (如果存在) 或默认配置覆盖
+@ActiveProfiles("test") // 使用 application-test.yml，测试环境禁用 Seata
 class IntegrationTests {
 
     @Autowired

@@ -1,352 +1,385 @@
-# PetVetAI - 宠物医疗 AI 咨询平台
+# PetVetAI - AI 驱动的宠物医疗咨询平台
 
-## 📋 项目概述
+## 项目简介
 
-PetVetAI 是一个基于 Spring Boot 和 Spring AI 的智能宠物医疗咨询平台，通过集成 OpenAI GPT-4 模型，为宠物主人提供专业的症状分析和医疗建议。系统采用分层架构设计，支持高并发访问，具备完善的流量控制和安全机制。
+PetVetAI 是一个基于 Spring Boot 3.3.5 和 Spring AI 的宠物医疗咨询平台，集成了 Seata 分布式事务、Sentinel 流量控制、RocketMQ 消息队列等技术。
 
-## 🛠 技术栈
+## 技术栈
 
-### 核心框架
-- **Spring Boot 3.3.5** - 应用框架
-- **Java 17** - 开发语言
-- **Spring AI 1.0.0** - AI 集成框架
-- **OpenAI GPT-4o** - AI 模型
+- **Spring Boot**: 3.3.5
+- **Spring AI**: 1.0.0 (OpenAI)
+- **Spring Cloud Alibaba**: 2023.0.1.2
+- **Seata**: 分布式事务解决方案
+- **Sentinel**: 流量控制和服务降级
+- **RocketMQ**: 消息队列
+- **MyBatis Plus**: 3.5.5
+- **MySQL**: 数据库
+- **Redis**: 缓存
 
-### 数据持久化
-- **MySQL** - 关系型数据库
-- **MyBatis Plus 3.5.5** - ORM 框架
-- **Redis** - 缓存数据库
+## Seata 分布式事务集成
 
-### 中间件
-- **RocketMQ 2.3.0** - 消息队列
-- **Sentinel** - 流量控制与熔断降级
+本项目集成了 Seata 分布式事务，提供了三种模式的完整演示：
 
-### 安全与监控
-- **Spring Security** - 安全框架
-- **OAuth2 Resource Server** - 认证授权
-- **JWT** - Token 认证
-- **Spring Boot Actuator** - 监控与管理
+### 1. AT 模式（自动模式）- 最简单
 
-### 工具库
-- **Lombok** - 简化代码
-- **Hutool 5.8.25** - Java 工具库
+**特点**：
+- 只需要在方法上添加 `@GlobalTransactional` 注解
+- Seata 自动处理事务的提交和回滚
+- 无需手动编写补偿逻辑
+- 适合大多数业务场景
 
-## 🏗 系统架构
-
-### 架构分层
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     前端层 (Frontend)                      │
-│              Next.js / React / Vue 应用                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP/REST API
-┌──────────────────────▼──────────────────────────────────┐
-│                    Controller 层                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │PetVetController│  │SentinelDemo  │  │  其他Controller │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                    Service 层                            │
-│  ┌──────────────┐  ┌──────────────┐                    │
-│  │PetMedicalService│ │MqProducerService│                  │
-│  └──────────────┘  └──────────────┘                    │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-┌───────▼──────┐ ┌────▼─────┐ ┌─────▼──────┐
-│  Mapper 层    │ │ Spring AI │ │  RocketMQ  │
-│  ┌──────────┐ │ │  OpenAI   │ │  消息队列   │
-│  │PetMapper │ │ │  GPT-4o   │ └───────────┘
-│  │SymptomMap│ │ └───────────┘
-│  └──────────┘ │
-└───────┬───────┘
-        │
-┌───────▼──────────────────────────────────┐
-│              Domain 层                     │
-│  ┌────────┐  ┌────────┐  ┌──────────┐   │
-│  │  Pet   │  │Symptom │  │Diagnosis │   │
-│  └────────┘  └────────┘  └──────────┘   │
-└───────┬──────────────────────────────────┘
-        │
-┌───────▼──────────────────────────────────┐
-│           数据存储层                        │
-│  ┌────────┐  ┌────────┐                  │
-│  │  MySQL │  │ Redis  │                  │
-│  └────────┘  └────────┘                  │
-└───────────────────────────────────────────┘
+**使用示例**：
+```java
+@GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
+public void createOrderAndDeductBalance(Long petId, Long userId, BigDecimal amount) {
+    // 创建订单
+    Order order = new Order(petId, orderNo, amount);
+    orderMapper.insert(order);
+    
+    // 扣减余额
+    Account account = accountMapper.selectById(userId);
+    account.setBalance(account.getBalance().subtract(amount));
+    accountMapper.updateById(account);
+}
 ```
 
-### 核心组件说明
+**工作原理**：
+1. 业务方法执行前，Seata 拦截 SQL，解析语义，保存数据快照（before image）
+2. 业务方法执行后，保存数据快照（after image），生成行锁
+3. 如果全局事务提交，释放行锁；如果回滚，使用 before image 恢复数据
 
-#### 1. Controller 层 (`com.petvetai.app.controller`)
-- **PetVetController**: 宠物医疗诊断 API 入口
-  - `POST /api/pet/diagnose` - 宠物症状诊断接口
-- **SentinelDemoController**: Sentinel 流量控制演示
-- **JavaReferenceTypesDemo**: Java 引用类型演示
+**测试接口**：
+- `GET /api/seata/at/create-order?petId=1&userId=1&amount=100` - 正常创建订单
+- `GET /api/seata/at/create-order-with-exception?petId=1&userId=1&amount=100` - 测试异常回滚
 
-#### 2. Service 层 (`com.petvetai.app.service`)
-- **PetMedicalService**: 核心业务服务
-  - 集成 Spring AI ChatClient
-  - 调用 OpenAI API 进行症状分析
-  - 管理诊断流程和结果持久化
-- **MqProducerService**: 消息队列生产者服务
+### 2. TCC 模式（手动模式）- 精确控制
 
-#### 3. Mapper 层 (`com.petvetai.app.mapper`)
-- **PetMapper**: 宠物信息数据访问
-- **SymptomMapper**: 症状记录数据访问
-- 基于 MyBatis Plus BaseMapper，提供基础 CRUD 能力
+**特点**：
+- 需要手动实现 Try、Confirm、Cancel 三个阶段
+- 精确控制事务的提交和回滚
+- 性能较高，但实现复杂
+- 适合需要精确控制、性能要求高的场景
 
-#### 4. Domain 层 (`com.petvetai.app.domain`)
-- **Pet**: 宠物实体
-  - 字段：id, name, breed, age, createdAt
-- **Symptom**: 症状实体
-  - 字段：id, description, petId, reportedAt
-- **Diagnosis**: 诊断结果值对象
-  - 字段：suggestion（建议）, confidence（置信度）
+**使用示例**：
+```java
+@TwoPhaseBusinessAction(
+    name = "tccCreateOrder",
+    commitMethod = "confirmCreateOrder",
+    rollbackMethod = "cancelCreateOrder"
+)
+public boolean tryCreateOrder(BusinessActionContext context, Long petId, BigDecimal amount) {
+    // Try 阶段：完成业务检查，预留资源
+    // 1. 检查账户余额
+    // 2. 冻结余额（预留资源）
+    // 3. 创建订单（状态为 PENDING）
+    return true;
+}
 
-#### 5. Config 层 (`com.petvetai.app.config`)
-- **ChatClientConfig**: Spring AI ChatClient 配置
-- **CorsConfig**: 跨域资源共享配置
-- **RedisConfig**: Redis 连接池配置
-- **SentinelConfig**: Sentinel 流量控制配置
-- **SecurityConfig**: Spring Security 安全配置
-  - 支持 JWT/OAuth2 认证（可扩展）
-  - 当前开放 `/api/pet/**` 和 `/actuator/**` 用于测试
+public boolean confirmCreateOrder(BusinessActionContext context) {
+    // Confirm 阶段：确认执行，使用 Try 阶段预留的资源
+    // 1. 更新订单状态为已支付
+    // 2. 扣减账户余额
+    return true;
+}
 
-## �� 数据模型
-
-### 宠物表 (pets)
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGINT | 主键，自增 |
-| name | VARCHAR | 宠物名称 |
-| breed | VARCHAR | 宠物品种 |
-| age | INT | 年龄 |
-| created_at | DATETIME | 创建时间 |
-
-### 症状表 (symptoms)
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGINT | 主键，自增 |
-| description | VARCHAR | 症状描述 |
-| pet_id | BIGINT | 关联宠物ID |
-| reported_at | DATETIME | 报告时间 |
-
-## 🔄 核心业务流程
-
-### 宠物诊断流程
-
-```
-1. 用户提交诊断请求
-   ↓
-2. Controller 接收请求 (PetVetController.diagnose)
-   ↓
-3. Service 层处理 (PetMedicalService.analyzeSymptom)
-   ├─ 查询宠物信息 (PetMapper)
-   ├─ 构建 AI Prompt（包含宠物信息 + 症状描述）
-   ├─ 调用 OpenAI API (Spring AI ChatClient)
-   ├─ 解析 AI 响应
-   └─ 保存症状记录 (SymptomMapper)
-   ↓
-4. 返回诊断结果 (Diagnosis)
-   ├─ suggestion: 诊断建议
-   └─ confidence: 置信度分数
+public boolean cancelCreateOrder(BusinessActionContext context) {
+    // Cancel 阶段：取消执行，释放 Try 阶段预留的资源
+    // 1. 更新订单状态为已取消
+    // 2. 释放冻结的余额
+    return true;
+}
 ```
 
-## ⚙️ 配置说明
+**工作原理**：
+1. **Try 阶段**：尝试执行，完成所有业务检查，预留业务资源
+2. **Confirm 阶段**：确认执行，使用 Try 阶段预留的资源，执行业务
+3. **Cancel 阶段**：取消执行，释放 Try 阶段预留的资源
 
-### 环境配置
+**测试接口**：
+- `GET /api/seata/tcc/create-order?petId=1&userId=1&amount=100` - TCC 模式创建订单
 
-项目支持多环境配置，通过 `SPRING_PROFILES_ACTIVE` 环境变量切换：
+### 3. Saga 模式（状态机模式）- 长事务
 
-- **dev** - 开发环境 (`application-dev.yml`)
-- **test** - 测试环境 (`application-test.yml`)
-- **uat** - 预发布环境 (`application-uat.yml`)
-- **prod** - 生产环境 (`application-prod.yml`)
+**特点**：
+- 通过状态机管理长事务
+- 每个服务实现正向操作和补偿操作
+- 支持长时间运行的事务
+- 最终一致性
+- 适合业务流程长、步骤多的场景
 
-### 关键环境变量
+**使用示例**：
+```java
+public void createOrderWithSaga(Long petId, BigDecimal amount) {
+    // Step 1: 创建订单
+    String orderNo = createOrderStep(petId, amount);
+    
+    // Step 2: 扣减库存
+    // deductInventoryStep(orderNo);
+    
+    // Step 3: 扣减余额
+    // deductBalanceStep(orderNo);
+    
+    // 如果某个步骤失败，会按照相反顺序执行补偿操作
+}
+```
+
+**工作原理**：
+1. 将长事务拆分为多个本地事务
+2. 每个本地事务都有对应的补偿操作
+3. 如果某个步骤失败，会按照相反顺序执行补偿操作
+
+**测试接口**：
+- `GET /api/seata/saga/create-order?petId=1&amount=100` - Saga 模式创建订单
+
+## 快速开始
+
+### 1. 环境要求
+
+- JDK 17+
+- Maven 3.6+
+- MySQL 5.7+
+- Redis 6.0+
+- Seata Server 1.8.0（已部署在本地）
+
+### 2. 数据库初始化
+
+执行 SQL 脚本创建必要的表：
 
 ```bash
-# 数据库配置
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=pet_vet_ai_dev
-DB_USERNAME=root
-DB_PASSWORD=password
-
-# Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
-
-# OpenAI 配置
-OPENAI_API_KEY=your-api-key-here
-
-# RocketMQ 配置
-ROCKETMQ_NAMESRV=localhost:9876
-
-# Sentinel 配置
-SENTINEL_DASHBOARD=localhost:8718
-
-# Spring Profile
-SPRING_PROFILES_ACTIVE=dev
+mysql -u root -p pet_vet_ai < src/main/resources/sql/seata_demo_tables.sql
 ```
 
-### 应用配置 (`application.yml`)
+或者直接在 MySQL 中执行 `src/main/resources/sql/seata_demo_tables.sql` 文件。
 
-- **Spring Cloud Sentinel**: 流量控制与熔断
-- **MyBatis Plus**: ORM 配置，支持下划线转驼峰
-- **Actuator**: 健康检查和监控端点
+### 3. 配置 Seata Server
 
-## 🚀 部署说明
-
-### 本地开发
-
-1. **环境要求**
-   - JDK 17+
-   - Maven 3.6+
-   - MySQL 8.0+
-   - Redis 6.0+
-   - RocketMQ (可选)
-   - Sentinel Dashboard (可选)
-
-2. **启动步骤**
+确保本地 Seata Server 已启动：
 
 ```bash
-# 1. 配置环境变量
-export OPENAI_API_KEY=your-api-key
-export SPRING_PROFILES_ACTIVE=dev
+# 使用 tool-services.sh 启动 Seata Server
+cd /path/to/workspace-service/cursor-AI
+./tool-services.sh start tool-seata-docker
+```
 
-# 2. 启动数据库和 Redis
-# 确保 MySQL 和 Redis 服务已启动
+Seata Server 配置：
+- 服务地址：`127.0.0.1:8091`
+- 控制台地址：`http://127.0.0.1:7091`
+- 默认账户：`seata/seata`
 
-# 3. 执行启动脚本
-chmod +x start.sh
+### 4. 配置应用
+
+修改 `src/main/resources/application-dev.yml` 中的数据库和 Redis 配置：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/pet_vet_ai
+    username: root
+    password: your_password
+  data:
+    redis:
+      host: localhost
+      port: 6379
+```
+
+### 5. 启动应用
+
+```bash
+# 使用 Maven 启动
+mvn spring-boot:run
+
+# 或使用启动脚本
 ./start.sh
-
-# 或使用 Maven
-mvn clean spring-boot:run
 ```
 
-3. **验证服务**
+### 6. 测试 Seata 功能
+
+#### AT 模式测试
 
 ```bash
-# 健康检查
-curl http://localhost:8080/actuator/health
+# 正常创建订单
+curl "http://localhost:48080/api/seata/at/create-order?petId=1&userId=1&amount=100"
 
-# Ping 接口
-curl http://localhost:8080/api/ping
+# 测试异常回滚
+curl "http://localhost:48080/api/seata/at/create-order-with-exception?petId=1&userId=1&amount=100"
 ```
 
-### Docker 部署
+#### TCC 模式测试
 
 ```bash
-# 1. 构建镜像
-docker build -t pet-vet-ai:latest .
-
-# 2. 运行容器
-docker run -d \
-  -p 8080:8080 \
-  -e OPENAI_API_KEY=your-api-key \
-  -e SPRING_PROFILES_ACTIVE=prod \
-  -e DB_HOST=your-db-host \
-  -e DB_PASSWORD=your-db-password \
-  pet-vet-ai:latest
+curl "http://localhost:48080/api/seata/tcc/create-order?petId=1&userId=1&amount=100"
 ```
 
-## 📡 API 接口
-
-### 诊断接口
-
-**POST** `/api/pet/diagnose`
-
-请求体：
-```json
-{
-  "petId": 1,
-  "symptomDesc": "宠物出现呕吐、食欲不振的症状"
-}
-```
-
-响应：
-```json
-{
-  "suggestion": "建议：可能是消化系统问题，建议禁食12小时观察...",
-  "confidence": 0.8
-}
-```
-
-### 监控接口
-
-- **GET** `/actuator/health` - 健康检查
-- **GET** `/actuator/info` - 应用信息
-- **GET** `/actuator/metrics` - 指标监控
-
-## 🔒 安全机制
-
-1. **Spring Security**: 基础安全框架
-2. **CORS 配置**: 跨域访问控制
-3. **JWT/OAuth2**: Token 认证（可扩展）
-4. **Sentinel**: 流量控制与限流
-
-## 📈 性能优化
-
-1. **Redis 缓存**: 缓存热点数据
-2. **连接池**: MySQL 和 Redis 连接池优化
-3. **Sentinel 限流**: 防止系统过载
-4. **异步消息**: RocketMQ 支持异步处理
-
-## 🧪 测试
+#### Saga 模式测试
 
 ```bash
-# 运行单元测试
-mvn test
-
-# 运行集成测试
-mvn verify
+curl "http://localhost:48080/api/seata/saga/create-order?petId=1&amount=100"
 ```
 
-## 📝 开发规范
+#### 获取 Seata 模式说明
 
-- 遵循 DDD（领域驱动设计）思想
-- 使用设计模式优化代码结构
-- 分层清晰：Controller -> Service -> Mapper -> Domain
-- 统一异常处理和响应格式
-- 完善的代码注释和文档
+```bash
+curl "http://localhost:48080/api/seata/info"
+```
 
-## 🔧 故障排查
+## 项目结构
 
-### 常见问题
+```
+pet-vet-ai/
+├── src/main/java/com/petvetai/app/
+│   ├── controller/
+│   │   ├── SeataDemoController.java      # Seata 演示 Controller
+│   │   └── PetVetController.java         # 宠物医疗 Controller
+│   ├── service/
+│   │   ├── seata/
+│   │   │   ├── SeataAtService.java       # AT 模式服务
+│   │   │   ├── SeataTccService.java      # TCC 模式服务
+│   │   │   └── SeataSagaService.java     # Saga 模式服务
+│   │   └── PetMedicalService.java        # 宠物医疗服务
+│   ├── domain/
+│   │   ├── Order.java                    # 订单实体
+│   │   ├── Account.java                  # 账户实体
+│   │   └── Pet.java                      # 宠物实体
+│   └── mapper/
+│       ├── OrderMapper.java              # 订单 Mapper
+│       └── AccountMapper.java            # 账户 Mapper
+├── src/main/resources/
+│   ├── seata/
+│   │   ├── registry.conf                 # Seata 注册中心配置
+│   │   └── file.conf                     # Seata 文件配置
+│   ├── sql/
+│   │   └── seata_demo_tables.sql         # 数据库表结构
+│   └── application-dev.yml              # 开发环境配置
+└── README.md                             # 项目说明文档
+```
 
-1. **OpenAI API 调用失败**
-   - 检查 `OPENAI_API_KEY` 环境变量
-   - 确认网络连接正常
+## Seata 配置说明
 
-2. **数据库连接失败**
-   - 检查数据库服务是否启动
-   - 验证连接配置是否正确
+### 1. Maven 依赖
 
-3. **端口被占用**
-   - 修改 `application.yml` 中的 `server.port`
-   - 或使用 `SERVER_PORT` 环境变量
+已在 `pom.xml` 中添加 Seata 依赖：
 
-## 📚 相关文档
+```xml
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+</dependency>
+```
 
-- [Spring Boot 官方文档](https://spring.io/projects/spring-boot)
-- [Spring AI 文档](https://docs.spring.io/spring-ai/reference/)
-- [MyBatis Plus 文档](https://baomidou.com/)
-- [Sentinel 文档](https://sentinelguard.io/)
+### 2. 应用配置
 
-## 📄 许可证
+在 `application-dev.yml` 中配置 Seata：
 
-本项目采用 MIT 许可证。
+```yaml
+spring:
+  cloud:
+    alibaba:
+      seata:
+        tx-service-group: default_tx_group
+        enabled: true
 
----
+seata:
+  enabled: true
+  application-id: ${spring.application.name}
+  tx-service-group: default_tx_group
+  config:
+    type: file
+    file:
+      name: file.conf
+  registry:
+    type: file
+    file:
+      name: file.conf
+  service:
+    vgroup-mapping:
+      default_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+```
 
-**维护者**: PetVetAI Team  
-**最后更新**: 2025
+### 3. Seata 配置文件
+
+配置文件位于 `src/main/resources/seata/` 目录：
+- `registry.conf` - 注册中心配置（使用 file 模式）
+- `file.conf` - 文件配置（使用 file 存储模式）
+
+## 三种模式对比
+
+| 特性 | AT 模式 | TCC 模式 | Saga 模式 |
+|------|--------|----------|-----------|
+| **实现复杂度** | 低（只需注解） | 高（需实现三个阶段） | 中（需定义状态机） |
+| **性能** | 中等 | 高 | 中等 |
+| **一致性** | 强一致性 | 强一致性 | 最终一致性 |
+| **适用场景** | 大多数业务场景 | 高性能、精确控制 | 长流程、多步骤 |
+| **补偿方式** | 自动回滚 | 手动 Cancel | 状态机补偿 |
+
+## 注意事项
+
+1. **AT 模式**：
+   - 需要在数据库中创建 `undo_log` 表
+   - 只支持单库事务，不支持跨库
+   - 需要数据库支持行锁
+
+2. **TCC 模式**：
+   - 需要实现 Try、Confirm、Cancel 三个方法
+   - 需要保证幂等性
+   - 需要处理空回滚和悬挂问题
+
+3. **Saga 模式**：
+   - 需要定义状态机 JSON 配置文件
+   - 需要实现每个服务的正向和补偿操作
+   - 最终一致性，不保证强一致性
+
+## 常见问题
+
+### 1. Seata 连接失败
+
+检查 Seata Server 是否启动：
+```bash
+docker ps | grep seata-server
+```
+
+检查配置中的 Seata Server 地址是否正确：
+```yaml
+seata:
+  service:
+    grouplist:
+      default: 127.0.0.1:8091
+```
+
+### 2. 事务不回滚
+
+确保：
+- 方法上添加了 `@GlobalTransactional` 注解
+- 异常类型在 `rollbackFor` 中指定
+- 异常被正确抛出，没有被捕获
+
+### 3. undo_log 表未创建
+
+执行 SQL 脚本创建表：
+```sql
+CREATE TABLE IF NOT EXISTS `undo_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `branch_id` BIGINT NOT NULL,
+  `xid` VARCHAR(128) NOT NULL,
+  `context` VARCHAR(128) NOT NULL,
+  `rollback_info` LONGBLOB NOT NULL,
+  `log_status` INT NOT NULL,
+  `log_created` DATETIME NOT NULL,
+  `log_modified` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_xid_branch_id` (`xid`, `branch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+## 参考资源
+
+- [Seata 官方文档](https://seata.io/zh-cn/docs/overview/what-is-seata.html)
+- [Spring Cloud Alibaba Seata](https://github.com/alibaba/spring-cloud-alibaba/wiki/Seata)
+- [Seata AT 模式原理](https://seata.io/zh-cn/docs/dev/mode/at-mode.html)
+- [Seata TCC 模式原理](https://seata.io/zh-cn/docs/dev/mode/tcc-mode.html)
+- [Seata Saga 模式原理](https://seata.io/zh-cn/docs/dev/mode/saga-mode.html)
+
+## 许可证
+
+本项目采用 Apache License 2.0 许可证。

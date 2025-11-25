@@ -25,6 +25,58 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+    alibaba:
+      seata:
+        tx-service-group: default_tx_group
+        enabled: true
+
+# Seata 配置 - 使用 Nacos 作为注册中心和配置中心
+seata:
+  enabled: true
+  application-id: ${spring.application.name}
+  tx-service-group: default_tx_group
+  # 使用 Nacos 作为配置中心
+  config:
+    type: nacos
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:}
+      group: ${NACOS_GROUP:SEATA_GROUP}
+      # Nacos 无鉴权，不需要用户名密码
+      data-id: seataServer.properties
+  # 使用 Nacos 作为注册中心
+  registry:
+    type: nacos
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:}
+      group: ${NACOS_GROUP:SEATA_GROUP}
+      # Nacos 无鉴权，不需要用户名密码
+      application: seata-server
+      cluster: default
+  service:
+    vgroup-mapping:
+      default_tx_group: default
+  client:
+    rm:
+      async-commit-buffer-limit: 10000
+      report-retry-count: 5
+      table-meta-check-enable: false
+      report-success-enable: false
+      saga-branch-register-enable: false
+      lock-retry-interval: 10
+      lock-retry-times: 30
+    tm:
+      commit-retry-count: 5
+      rollback-retry-count: 5
+      degrade-check: false
+      degrade-check-period: 2000
+      degrade-check-allow-times: 10
+    undo:
+      data-validation: true
+      only-care-update-columns: true
+      log-serialization: jackson
+      log-table: undo_log
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV:localhost:9876}

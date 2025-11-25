@@ -1,12 +1,12 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:test-db}:${DB_PORT:3306}/${DB_NAME:pet_vet_ai_test}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pet_vet_ai_test}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
+    password: ${DB_PASSWORD:root12345678}
   data:
     redis:
-      host: ${REDIS_HOST:test-redis}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: ${REDIS_DB:1}
@@ -25,9 +25,17 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+    alibaba:
+      seata:
+        tx-service-group: default_tx_group
+        enabled: false  # 测试环境禁用 Seata，避免需要连接 Seata Server 和 Nacos
+
+# Seata 配置 - 测试环境禁用 Seata
+seata:
+  enabled: false  # 测试环境禁用 Seata，避免需要连接 Seata Server 和 Nacos
 
 rocketmq:
-  name-server: ${ROCKETMQ_NAMESRV:test-rocketmq:9876}
+  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
   producer:
     group: pet-vet-ai-producer-group-test
     send-message-timeout: 3000
