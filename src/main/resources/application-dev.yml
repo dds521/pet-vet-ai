@@ -1,96 +1,34 @@
+# ============================================
+# 开发环境配置
+# 所有配置统一从 Nacos 加载：
+# - 公共配置: pet-vet-ai-common.yml
+# - 开发环境配置: pet-vet-ai-dev.yml
+# 
+# 注意：Nacos 连接配置必须保留在本地（必须先连接 Nacos 才能加载配置）
+# ============================================
+
 spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pet_vet_ai}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root12345678}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DB:0}
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:dummy-key}
-      chat:
-        options:
-          model: gpt-4o
   cloud:
-    compatibility-verifier:
-      enabled: false
-    alibaba:
-      seata:
-        tx-service-group: default_tx_group
-        enabled: true
-
-# Seata 配置 - 使用 Nacos 作为注册中心和配置中心
-seata:
-  enabled: true
-  application-id: ${spring.application.name}
-  tx-service-group: default_tx_group
-  # 使用 Nacos 作为配置中心
-  config:
-    type: nacos
     nacos:
-      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-      namespace: ${NACOS_NAMESPACE:}
-      group: ${NACOS_GROUP:SEATA_GROUP}
-      # Nacos 无鉴权，不需要用户名密码
-      data-id: seataServer.properties
-  # 使用 Nacos 作为注册中心
-  registry:
-    type: nacos
-    nacos:
-      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-      namespace: ${NACOS_NAMESPACE:}
-      group: ${NACOS_GROUP:SEATA_GROUP}
-      # Nacos 无鉴权，不需要用户名密码
-      application: seata-server
-      cluster: default
-  service:
-    vgroup-mapping:
-      default_tx_group: default
-  client:
-    rm:
-      async-commit-buffer-limit: 10000
-      report-retry-count: 5
-      table-meta-check-enable: false
-      report-success-enable: false
-      saga-branch-register-enable: false
-      lock-retry-interval: 10
-      lock-retry-times: 30
-    tm:
-      commit-retry-count: 5
-      rollback-retry-count: 5
-      degrade-check: false
-      degrade-check-period: 2000
-      degrade-check-allow-times: 10
-    undo:
-      data-validation: true
-      only-care-update-columns: true
-      log-serialization: jackson
-      log-table: undo_log
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
-  producer:
-    group: pet-vet-ai-producer-group-dev
-    send-message-timeout: 3000
-
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开发环境打印 SQL
-
-logging:
-  level:
-    root: INFO
-    com.petvetai.app.mapper: DEBUG
-    com.alibaba.csp.sentinel: INFO
+      config:
+        # Nacos 连接配置（必须保留，用于连接 Nacos）
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        refresh-enabled: true
+        # 共享配置：从 Nacos 加载公共配置
+        shared-configs:
+          - data-id: pet-vet-ai-common.yml
+            group: DEFAULT_GROUP
+            refresh: true
+        # 扩展配置：从 Nacos 加载开发环境特定配置
+        extension-configs:
+          - data-id: pet-vet-ai-dev.yml
+            group: DEFAULT_GROUP
+            refresh: true
+      discovery:
+        # Nacos 服务发现配置（必须保留，用于连接 Nacos）
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
 

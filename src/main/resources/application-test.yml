@@ -1,51 +1,40 @@
+# ============================================
+# 测试环境配置
+# 所有配置统一从 Nacos 加载：
+# - 公共配置: pet-vet-ai-common.yml
+# - 测试环境配置: pet-vet-ai-test.yml
+# 
+# 注意：Nacos 连接配置必须保留在本地（必须先连接 Nacos 才能加载配置）
+# ============================================
+
 spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pet_vet_ai_test}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root12345678}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DB:1}
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:dummy-key}
-      chat:
-        options:
-          model: gpt-4o
   cloud:
-    compatibility-verifier:
-      enabled: false
-    alibaba:
-      seata:
-        tx-service-group: default_tx_group
-        enabled: false  # 测试环境禁用 Seata，避免需要连接 Seata Server 和 Nacos
-
-# Seata 配置 - 测试环境禁用 Seata
-seata:
-  enabled: false  # 测试环境禁用 Seata，避免需要连接 Seata Server 和 Nacos
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
-  producer:
-    group: pet-vet-ai-producer-group-test
-    send-message-timeout: 3000
-
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
-logging:
-  level:
-    root: INFO
-    com.petvetai.app.mapper: DEBUG
+    nacos:
+      config:
+        # Nacos 连接配置（必须保留，用于连接 Nacos）
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        # 测试环境特定配置：超时和重试
+        timeout: 3000
+        max-retry: 3
+        refresh-enabled: true
+        # 共享配置：从 Nacos 加载公共配置
+        shared-configs:
+          - data-id: pet-vet-ai-common.yml
+            group: DEFAULT_GROUP
+            refresh: true
+        # 扩展配置：从 Nacos 加载测试环境特定配置
+        extension-configs:
+          - data-id: pet-vet-ai-test.yml
+            group: DEFAULT_GROUP
+            refresh: true
+      discovery:
+        # Nacos 服务发现配置（必须保留，用于连接 Nacos）
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        # 测试环境特定配置
+        watch-delay: 30000
+        enabled: ${NACOS_DISCOVERY_ENABLED:true}
 

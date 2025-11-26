@@ -1,14 +1,19 @@
 package com.petvetai.app.config;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ChatClientConfig {
 
+    /**
+     * 创建 ChatClient Bean
+     * 通过注入 ChatModel 来创建 ChatClient.Builder
+     */
     @Bean
-    public ChatClient chatClient(ChatClient.Builder builder) {
-        return builder.build();
+    public ChatClient chatClient(ChatModel chatModel) {
+        return ChatClient.builder(chatModel).build();
     }
 }

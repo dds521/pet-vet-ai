@@ -3,13 +3,22 @@ package com.petvetai.app;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.env.Environment;
 
 @SpringBootApplication
 @MapperScan("com.petvetai.app.mapper")
 public class PetVetAiApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(PetVetAiApplication.class, args);
+		var app = new SpringApplication(PetVetAiApplication.class);
+		var context = app.run(args);
+		Environment env = context.getEnvironment();
+		
+		// 打印当前激活的 profile
+		System.out.println("==========================================");
+		System.out.println("当前激活的 Profile: " + String.join(", ", env.getActiveProfiles()));
+		System.out.println("Seata 是否启用: " + env.getProperty("seata.enabled", "未配置"));
+		System.out.println("==========================================");
 	}
 
 }
