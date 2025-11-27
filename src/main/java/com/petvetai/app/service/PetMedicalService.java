@@ -5,21 +5,25 @@ import com.petvetai.app.domain.Pet;
 import com.petvetai.app.domain.Symptom;
 import com.petvetai.app.mapper.PetMapper;
 import com.petvetai.app.mapper.SymptomMapper;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 宠物医疗服务
+ * 
+ * 使用 LangChain4j 的 ChatLanguageModel
+ * 支持多种 AI 提供商：DeepSeek、Grok、OpenAI
+ */
 @Service
 public class PetMedicalService {
 
-    private final ChatClient chatClient;
+    private final ChatLanguageModel chatLanguageModel;
     private final PetMapper petMapper;
     private final SymptomMapper symptomMapper;
 
-    @Autowired
-    public PetMedicalService(ChatClient chatClient, PetMapper petMapper, SymptomMapper symptomMapper) {
-        this.chatClient = chatClient;
+    public PetMedicalService(ChatLanguageModel chatLanguageModel, PetMapper petMapper, SymptomMapper symptomMapper) {
+        this.chatLanguageModel = chatLanguageModel;
         this.petMapper = petMapper;
         this.symptomMapper = symptomMapper;
     }
@@ -36,10 +40,8 @@ public class PetMedicalService {
                 pet.getBreed(), pet.getAge(), symptomDesc
         );
 
-        String aiResponse = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
+        // 使用 LangChain4j 的 ChatLanguageModel
+        String aiResponse = chatLanguageModel.generate(prompt);
 
         // 简单解析响应
         String suggestion = aiResponse.contains("建议：") ? aiResponse.split("建议：")[1].split("；")[0] : aiResponse;

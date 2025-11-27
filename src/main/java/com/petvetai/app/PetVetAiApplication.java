@@ -5,6 +5,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
 
+/**
+ * Pet-Vet-AI 应用主类
+ * 
+ * 项目使用 LangChain4j 进行 AI 集成，支持 OpenAI、DeepSeek 和 xAI Grok
+ */
 @SpringBootApplication
 @MapperScan("com.petvetai.app.mapper")
 public class PetVetAiApplication {

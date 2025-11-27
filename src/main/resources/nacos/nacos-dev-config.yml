@@ -62,7 +62,9 @@ logging:
     com.petvetai.app.mapper: DEBUG
     com.alibaba.csp.sentinel: INFO
     io.seata: INFO
-    com.alibaba.nacos: INFO
-    com.alibaba.cloud.nacos: INFO
+    com.alibaba.nacos: DEBUG  # Nacos 详细日志
+    com.alibaba.cloud.nacos: DEBUG  # Nacos Cloud 详细日志
+    com.alibaba.cloud.nacos.config: DEBUG  # Nacos 配置加载详细日志
+    com.alibaba.cloud.nacos.client.config: DEBUG  # Nacos 客户端详细日志
     dev.langchain4j: DEBUG  # LangChain4j 调试日志
 

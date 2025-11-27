@@ -50,17 +50,26 @@ seata:
       log-table: undo_log
 
 # Spring Cloud Alibaba 配置（所有环境公共）
+# AI 配置（所有环境公共）
+# 支持 OpenAI、DeepSeek 和 xAI Grok
+# 推荐使用 DeepSeek（价格更便宜，国内访问更稳定）或 Grok（性能优秀）
 spring:
   cloud:
     alibaba:
       seata:
         tx-service-group: default_tx_group
         enabled: true
-
-# AI 配置（所有环境公共）
-# 支持 OpenAI、DeepSeek 和 xAI Grok
-# 推荐使用 DeepSeek（价格更便宜，国内访问更稳定）或 Grok（性能优秀）
-spring:
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8718}
+        port: 8719
+      eager: true
+      web:
+        filter:
+          enabled: true
+          url-patterns: /**
+      compatibility-verifier:
+        enabled: false
   ai:
     # AI 提供商类型：openai、deepseek 或 grok（默认使用 deepseek）
     provider:
@@ -93,28 +102,13 @@ spring:
       base-url: ${GROK_BASE_URL:https://api.x.ai/v1}
       chat:
         options:
-          model: ${GROK_MODEL:grok-2-latest}
+          model: ${GROK_MODEL:grok-4-latest}
           temperature: ${GROK_TEMPERATURE:0.7}
 
 # RocketMQ 基础配置（所有环境公共，producer.group 在各环境配置中指定）
 rocketmq:
   producer:
     send-message-timeout: 3000
-
-# Sentinel 配置（所有环境公共）
-spring:
-  cloud:
-    sentinel:
-      transport:
-        dashboard: ${SENTINEL_DASHBOARD:localhost:8718}
-        port: 8719
-      eager: true
-      web:
-        filter:
-          enabled: true
-          url-patterns: /**
-      compatibility-verifier:
-        enabled: false
 
 # MyBatis-Plus 基础配置（所有环境公共）
 mybatis-plus:
