@@ -57,14 +57,32 @@ spring:
         tx-service-group: default_tx_group
         enabled: true
 
-# AI OpenAI 配置（所有环境公共）
+# AI 配置（所有环境公共）
+# 支持 OpenAI 和 DeepSeek（推荐使用 DeepSeek，价格更便宜，国内访问更稳定）
 spring:
   ai:
+    # AI 提供商类型：openai 或 deepseek（默认使用 deepseek）
+    provider:
+      type: ${AI_PROVIDER_TYPE:deepseek}
+    
+    # OpenAI 配置
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${OPENAI_API_KEY:}
       chat:
         options:
-          model: gpt-4o
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+    
+    # DeepSeek 配置（推荐）
+    # DeepSeek 使用 OpenAI 兼容的 API，价格更便宜，国内访问更稳定
+    # 申请地址：https://platform.deepseek.com/
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${DEEPSEEK_MODEL:deepseek-chat}
+          temperature: ${DEEPSEEK_TEMPERATURE:0.7}
 
 # RocketMQ 基础配置（所有环境公共，producer.group 在各环境配置中指定）
 rocketmq:

@@ -40,6 +40,18 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开发环境打印 SQL
 
+# AI 配置（开发环境特定配置，可选）
+# 公共 AI 配置在 pet-vet-ai-common.yml 中
+# 如需在开发环境使用不同的 AI 提供商，可在此覆盖
+# spring:
+#   ai:
+#     provider:
+#       type: ${AI_PROVIDER_TYPE:deepseek}  # deepseek 或 openai
+#     deepseek:
+#       api-key: ${DEEPSEEK_API_KEY:}
+#     openai:
+#       api-key: ${OPENAI_API_KEY:}
+
 # 日志配置（开发环境）
 logging:
   level:
@@ -49,4 +61,5 @@ logging:
     io.seata: INFO
     com.alibaba.nacos: INFO
     com.alibaba.cloud.nacos: INFO
+    dev.langchain4j: DEBUG  # LangChain4j 调试日志
 

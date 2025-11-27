@@ -47,9 +47,18 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
+# AI 配置（测试环境特定配置，可选）
+# 公共 AI 配置在 pet-vet-ai-common.yml 中
+# 测试环境建议使用 DeepSeek（成本更低）
+# spring:
+#   ai:
+#     provider:
+#       type: ${AI_PROVIDER_TYPE:deepseek}  # 测试环境默认使用 deepseek
+
 # 日志配置（测试环境）
 logging:
   level:
     root: INFO
     com.petvetai.app.mapper: DEBUG
+    dev.langchain4j: INFO  # LangChain4j 日志
 

@@ -40,9 +40,18 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl # UAT 使用日志文件记录
 
+# AI 配置（UAT 环境特定配置，可选）
+# 公共 AI 配置在 pet-vet-ai-common.yml 中
+# UAT 环境建议使用 DeepSeek（成本更低，适合测试）
+# spring:
+#   ai:
+#     provider:
+#       type: ${AI_PROVIDER_TYPE:deepseek}  # UAT 环境默认使用 deepseek
+
 # 日志配置（UAT 环境）
 logging:
   level:
     root: INFO
     com.petvetai.app.mapper: INFO
+    dev.langchain4j: INFO  # LangChain4j 日志
 

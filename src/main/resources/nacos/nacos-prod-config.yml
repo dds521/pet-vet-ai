@@ -40,9 +40,19 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
+# AI 配置（生产环境特定配置，可选）
+# 公共 AI 配置在 pet-vet-ai-common.yml 中
+# 生产环境建议使用 DeepSeek（价格更便宜，国内访问更稳定）
+# 如需切换，设置环境变量：AI_PROVIDER_TYPE=openai 或 deepseek
+# spring:
+#   ai:
+#     provider:
+#       type: ${AI_PROVIDER_TYPE:deepseek}  # 生产环境默认使用 deepseek
+
 # 日志配置（生产环境）
 logging:
   level:
     root: WARN # 生产环境只记录警告以上
     com.petvetai.app: INFO # 业务日志保留 INFO
+    dev.langchain4j: WARN  # LangChain4j 只记录警告以上
 
