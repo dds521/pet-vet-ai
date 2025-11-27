@@ -16,6 +16,9 @@ spring:
         namespace: ${NACOS_NAMESPACE:}
         group: ${NACOS_GROUP:DEFAULT_GROUP}
         refresh-enabled: true
+        # Spring Boot 3.x + Spring Cloud Alibaba 2023.x: 禁用 import-check（使用 shared-configs 和 extension-configs）
+        import-check:
+          enabled: false
         # 共享配置：从 Nacos 加载公共配置
         shared-configs:
           - data-id: pet-vet-ai-common.yml
