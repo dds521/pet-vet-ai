@@ -11,9 +11,9 @@ import org.springframework.context.annotation.Primary;
  * LangChain4j 配置类
  * 
  * 配置 LangChain4j 的 ChatLanguageModel
- * 支持多种 AI 提供商：OpenAI、DeepSeek、Gemini 等
+ * 支持多种 AI 提供商：OpenAI、DeepSeek、xAI Grok 等
  * 
- * DeepSeek 使用 OpenAI 兼容的 API，可以通过设置 baseUrl 来使用
+ * DeepSeek 和 xAI Grok 都使用 OpenAI 兼容的 API，可以通过设置 baseUrl 来使用
  */
 @Configuration
 public class LangChainConfig {
@@ -42,16 +42,30 @@ public class LangChainConfig {
     @Value("${spring.ai.deepseek.chat.options.temperature:0.7}")
     private Double deepSeekTemperature;
 
+    @Value("${spring.ai.grok.api-key:}")
+    private String grokApiKey;
+
+    @Value("${spring.ai.grok.base-url:https://api.x.ai/v1}")
+    private String grokBaseUrl;
+
+    @Value("${spring.ai.grok.chat.options.model:grok-2-latest}")
+    private String grokModel;
+
+    @Value("${spring.ai.grok.chat.options.temperature:0.7}")
+    private Double grokTemperature;
+
     /**
      * 创建 ChatLanguageModel
-     * 根据配置自动选择 OpenAI 或 DeepSeek
+     * 根据配置自动选择 OpenAI、DeepSeek 或 Grok
      * 
      * @return ChatLanguageModel 实例
      */
     @Bean
     @Primary
     public ChatLanguageModel chatLanguageModel() {
-        if ("deepseek".equalsIgnoreCase(providerType)) {
+        if ("grok".equalsIgnoreCase(providerType)) {
+            return createGrokModel();
+        } else if ("deepseek".equalsIgnoreCase(providerType)) {
             return createDeepSeekModel();
         } else {
             return createOpenAiModel();
@@ -79,6 +93,19 @@ public class LangChainConfig {
                 .apiKey(openAiApiKey)
                 .modelName(openAiModel)
                 .temperature(temperature)
+                .build();
+    }
+
+    /**
+     * 创建 xAI Grok ChatLanguageModel
+     * Grok 使用 OpenAI 兼容的 API
+     */
+    private ChatLanguageModel createGrokModel() {
+        return OpenAiChatModel.builder()
+                .apiKey(grokApiKey)
+                .baseUrl(grokBaseUrl)
+                .modelName(grokModel)
+                .temperature(grokTemperature)
                 .build();
     }
 }

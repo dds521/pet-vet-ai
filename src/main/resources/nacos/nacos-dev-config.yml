@@ -42,13 +42,16 @@ mybatis-plus:
 
 # AI 配置（开发环境特定配置，可选）
 # 公共 AI 配置在 pet-vet-ai-common.yml 中
+# 支持：deepseek（推荐）、grok、openai
 # 如需在开发环境使用不同的 AI 提供商，可在此覆盖
 # spring:
 #   ai:
 #     provider:
-#       type: ${AI_PROVIDER_TYPE:deepseek}  # deepseek 或 openai
+#       type: ${AI_PROVIDER_TYPE:deepseek}  # deepseek、grok 或 openai
 #     deepseek:
 #       api-key: ${DEEPSEEK_API_KEY:}
+#     grok:
+#       api-key: ${GROK_API_KEY:}
 #     openai:
 #       api-key: ${OPENAI_API_KEY:}
 
