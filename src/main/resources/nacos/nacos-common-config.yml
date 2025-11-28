@@ -129,3 +129,28 @@ management:
     health:
       show-details: always
 
+# 微信小程序配置（所有环境公共）
+wechat:
+  miniapp:
+    # 微信小程序AppID（必须配置，通过环境变量或Nacos配置）
+    appid: ${WECHAT_MINIAPP_APPID:}
+    # 微信小程序AppSecret（必须配置，通过环境变量或Nacos配置）
+    secret: ${WECHAT_MINIAPP_SECRET:}
+  # 微信API配置
+  api:
+    # 微信登录API地址（默认使用官方地址，测试环境可配置为mock服务器）
+    login-url: ${WECHAT_API_LOGIN_URL:https://api.weixin.qq.com/sns/jscode2session}
+  # Redis配置（用于存储sessionKey）
+  redis:
+    # sessionKey在Redis中的key前缀
+    session-key-prefix: ${WECHAT_REDIS_SESSION_KEY_PREFIX:wechat:session:}
+    # sessionKey过期时间（秒），微信sessionKey有效期为3天，建议设置为2天
+    session-key-expire-seconds: ${WECHAT_REDIS_SESSION_KEY_EXPIRE_SECONDS:172800}
+
+# JWT配置（所有环境公共）
+jwt:
+  # JWT密钥（生产环境必须修改为强随机字符串，至少32位）
+  secret: ${JWT_SECRET:pet-vet-ai-secret-key-change-in-production-environment-minimum-32-characters}
+  # JWT过期时间（毫秒），默认7天
+  expiration: ${JWT_EXPIRATION:604800000}
+
