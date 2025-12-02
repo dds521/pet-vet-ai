@@ -75,10 +75,13 @@ logging:
     com.petvetai.app.mapper: DEBUG
     com.alibaba.csp.sentinel: INFO
     io.seata: INFO
-    com.alibaba.nacos: DEBUG  # Nacos 详细日志
-    com.alibaba.cloud.nacos: DEBUG  # Nacos Cloud 详细日志
+    com.alibaba.nacos: INFO  # Nacos 日志（INFO 级别，避免 gRPC 警告）
+    com.alibaba.cloud.nacos: INFO  # Nacos Cloud 日志
     com.alibaba.cloud.nacos.config: DEBUG  # Nacos 配置加载详细日志
     com.alibaba.cloud.nacos.client.config: DEBUG  # Nacos 客户端详细日志
+    # 降低 gRPC 相关类的日志级别，避免 ClassNotFoundException 警告
+    com.alibaba.nacos.shaded.io.grpc: WARN  # gRPC 相关警告忽略
+    com.alibaba.nacos.shaded.io.grpc.internal.ManagedChannelImplBuilder: WARN  # gRPC 通道构建器警告忽略
     dev.langchain4j: DEBUG  # LangChain4j 调试日志
     com.petvetai.app.service.EmailReaderService: DEBUG  # 邮件读取服务日志
 
