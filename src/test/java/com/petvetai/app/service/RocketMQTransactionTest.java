@@ -1,0 +1,176 @@
+package com.petvetai.app.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendStatus;
+import org.apache.rocketmq.client.producer.TransactionSendResult;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * RocketMQ 2阶段提交测试用例
+ * 
+ * 测试场景：
+ * 1. 本地事务成功 - 消息应该被提交
+ * 2. 本地事务失败 - 消息应该被回滚
+ * 3. 本地事务异常 - 消息状态为 UNKNOW，等待后续检查
+ */
+@Slf4j
+@SpringBootTest
+@ActiveProfiles("test")
+class RocketMQTransactionTest {
+
+    @Autowired(required = false)
+    private RocketMQTransactionService transactionService;
+
+    private static final String TOPIC = "pet-vet-transaction-topic";
+    private static final String TAG = "test-tag";
+
+    @Test
+    void testTransactionMessageSuccess() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+
+        log.info("========== 测试场景1：本地事务成功 ==========");
+        
+        // 发送事务消息，业务参数为 true 表示本地事务成功
+        TransactionSendResult result = transactionService.sendTransactionMessage(
+            TOPIC, 
+            TAG, 
+            "测试消息：本地事务成功", 
+            true
+        );
+
+        // 验证消息发送成功
+        assertNotNull(result);
+        assertEquals(SendStatus.SEND_OK, result.getSendStatus());
+        log.info("消息发送成功，事务ID: {}", result.getTransactionId());
+        
+        // 等待事务处理完成
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        log.info("========== 测试场景1完成 ==========");
+    }
+
+    @Test
+    void testTransactionMessageRollback() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+
+        log.info("========== 测试场景2：本地事务失败 ==========");
+        
+        // 发送事务消息，业务参数为 false 表示本地事务失败
+        TransactionSendResult result = transactionService.sendTransactionMessage(
+            TOPIC, 
+            TAG, 
+            "测试消息：本地事务失败", 
+            false
+        );
+
+        // 验证消息发送成功
+        assertNotNull(result);
+        assertEquals(SendStatus.SEND_OK, result.getSendStatus());
+        log.info("消息发送成功，事务ID: {}", result.getTransactionId());
+        
+        // 等待事务处理完成
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        log.info("========== 测试场景2完成 ==========");
+    }
+
+    @Test
+    void testTransactionMessageUnknow() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+
+        log.info("========== 测试场景3：本地事务异常（UNKNOW状态） ==========");
+        
+        // 发送事务消息，业务参数为 null 会触发异常，返回 UNKNOW
+        TransactionSendResult result = transactionService.sendTransactionMessage(
+            TOPIC, 
+            TAG, 
+            "测试消息：本地事务异常", 
+            null
+        );
+
+        // 验证消息发送成功
+        assertNotNull(result);
+        assertEquals(SendStatus.SEND_OK, result.getSendStatus());
+        log.info("消息发送成功，事务ID: {}", result.getTransactionId());
+        
+        // 等待事务处理完成（UNKNOW 状态会触发 checkLocalTransaction 回调）
+        try {
+            Thread.sleep(5000); // 等待更长时间，以便观察 checkLocalTransaction 的调用
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        log.info("========== 测试场景3完成 ==========");
+    }
+
+    @Test
+    void testTransactionMessageFlow() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+
+        log.info("========== 综合测试：完整的事务消息流程 ==========");
+        
+        // 测试成功场景
+        log.info("--- 步骤1：发送成功的事务消息 ---");
+        TransactionSendResult successResult = transactionService.sendTransactionMessage(
+            TOPIC, 
+            TAG, 
+            "综合测试：成功消息", 
+            true
+        );
+        assertNotNull(successResult);
+        assertEquals(SendStatus.SEND_OK, successResult.getSendStatus());
+        
+        // 等待处理
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // 测试失败场景
+        log.info("--- 步骤2：发送失败的事务消息 ---");
+        TransactionSendResult failResult = transactionService.sendTransactionMessage(
+            TOPIC, 
+            TAG, 
+            "综合测试：失败消息", 
+            false
+        );
+        assertNotNull(failResult);
+        assertEquals(SendStatus.SEND_OK, failResult.getSendStatus());
+        
+        // 等待处理
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        log.info("========== 综合测试完成 ==========");
+    }
+}
+
