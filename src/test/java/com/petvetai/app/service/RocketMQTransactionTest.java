@@ -1,5 +1,7 @@
 package com.petvetai.app.service;
 
+import com.petvetai.app.domain.TransactionLog;
+import com.petvetai.app.mapper.TransactionLogMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.client.producer.TransactionSendResult;
@@ -25,6 +27,9 @@ class RocketMQTransactionTest {
 
     @Autowired(required = false)
     private RocketMQTransactionService transactionService;
+    
+    @Autowired(required = false)
+    private TransactionLogMapper transactionLogMapper;
 
     private static final String TOPIC = "pet-vet-transaction-topic";
     private static final String TAG = "test-tag";
@@ -171,6 +176,111 @@ class RocketMQTransactionTest {
         }
         
         log.info("========== 综合测试完成 ==========");
+    }
+    
+    @Test
+    void testTransactionMessageWithDatabaseRollback() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+        
+        if (transactionLogMapper == null) {
+            log.warn("TransactionLogMapper 未配置，跳过数据库测试");
+            return;
+        }
+
+        log.info("========== 测试场景4：消息发送成功，数据库操作异常回滚 ==========");
+        
+        // 清理可能存在的测试数据
+        transactionLogMapper.delete(null);
+        
+        String messageBody = "测试消息：数据库操作异常，应该回滚";
+        
+        // 发送事务消息，数据库操作应该失败
+        TransactionSendResult result = transactionService.sendTransactionMessageWithDatabase(
+            TOPIC, 
+            TAG, 
+            messageBody, 
+            false  // 数据库操作应该失败
+        );
+
+        // 验证消息发送成功
+        assertNotNull(result);
+        assertEquals(SendStatus.SEND_OK, result.getSendStatus());
+        log.info("消息发送成功，事务ID: {}", result.getTransactionId());
+        
+        // 等待事务处理完成
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // 验证数据库中没有保存记录（因为回滚了）
+        TransactionLog savedLog = transactionLogMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TransactionLog>()
+                .eq(TransactionLog::getTransactionId, result.getTransactionId())
+        );
+        
+        assertNull(savedLog, "数据库操作应该被回滚，不应该有记录");
+        log.info("✅ 验证通过：数据库操作已回滚，没有保存记录");
+        
+        log.info("========== 测试场景4完成 ==========");
+    }
+    
+    @Test
+    void testTransactionMessageWithDatabaseSuccess() {
+        if (transactionService == null) {
+            log.warn("RocketMQ 事务服务未配置，跳过测试");
+            return;
+        }
+        
+        if (transactionLogMapper == null) {
+            log.warn("TransactionLogMapper 未配置，跳过数据库测试");
+            return;
+        }
+
+        log.info("========== 测试场景5：消息发送成功，数据库操作成功 ==========");
+        
+        String messageBody = "测试消息：数据库操作成功，应该提交";
+        
+        // 发送事务消息，数据库操作应该成功
+        TransactionSendResult result = transactionService.sendTransactionMessageWithDatabase(
+            TOPIC, 
+            TAG, 
+            messageBody, 
+            true  // 数据库操作应该成功
+        );
+
+        // 验证消息发送成功
+        assertNotNull(result);
+        assertEquals(SendStatus.SEND_OK, result.getSendStatus());
+        log.info("消息发送成功，事务ID: {}", result.getTransactionId());
+        
+        // 等待事务处理完成
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // 验证数据库中保存了记录
+        TransactionLog savedLog = transactionLogMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TransactionLog>()
+                .eq(TransactionLog::getTransactionId, result.getTransactionId())
+        );
+        
+        assertNotNull(savedLog, "数据库操作应该成功，应该有记录");
+        assertEquals("COMMITTED", savedLog.getStatus(), "事务状态应该是 COMMITTED");
+        assertEquals(messageBody, savedLog.getMessageBody(), "消息体应该一致");
+        log.info("✅ 验证通过：数据库操作成功，记录已保存，ID: {}, 状态: {}", savedLog.getId(), savedLog.getStatus());
+        
+        // 清理测试数据
+        transactionLogMapper.deleteById(savedLog.getId());
+        log.info("测试数据已清理");
+        
+        log.info("========== 测试场景5完成 ==========");
     }
 }
 
