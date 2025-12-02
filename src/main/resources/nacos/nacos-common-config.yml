@@ -40,7 +40,10 @@ seata:
     tm:
       commit-retry-count: 5
       rollback-retry-count: 5
-      degrade-check: false
+      # 启用降级检查：当 Seata Server 不可用时，自动降级为本地事务，不阻塞应用启动
+      # 这是关键配置：如果 Seata Server 连接失败，Seata 会自动降级为本地事务模式
+      # 应用可以正常启动，只是分布式事务功能不可用（会使用本地事务）
+      degrade-check: true
       degrade-check-period: 2000
       degrade-check-allow-times: 10
     undo:
@@ -63,13 +66,21 @@ spring:
       transport:
         dashboard: ${SENTINEL_DASHBOARD:localhost:8718}
         port: 8719
-      eager: true
+        # 连接超时时间（毫秒），默认 3 秒
+        heartbeat-interval-ms: 5000
+      # 设置为 false：延迟初始化，不阻塞应用启动；如果 Dashboard 不可用，只记录警告，不抛出异常
+      eager: false
       web:
         filter:
           enabled: true
           url-patterns: /**
       compatibility-verifier:
         enabled: false
+      # 配置 Sentinel 在 Dashboard 不可用时的行为
+      # 如果 Dashboard 连接失败，只记录警告，不影响应用启动
+      datasource:
+        # 可以配置多个数据源，如果某个数据源连接失败，不影响其他数据源
+        # 这里不配置具体数据源，使用默认的内存规则，避免连接失败
   ai:
     # AI 提供商类型：openai、deepseek 或 grok（默认使用 deepseek）
     provider:
