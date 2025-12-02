@@ -55,10 +55,24 @@ mybatis-plus:
 #     provider:
 #       type: ${AI_PROVIDER_TYPE:deepseek}  # 测试环境默认使用 deepseek
 
+# 邮件读取配置（测试环境）
+email:
+  imap:
+    host: ${EMAIL_IMAP_HOST:imap.example.com}
+    port: ${EMAIL_IMAP_PORT:993}
+    username: ${EMAIL_IMAP_USERNAME:}
+    password: ${EMAIL_IMAP_PASSWORD:}
+    ssl: ${EMAIL_IMAP_SSL:true}
+  subject:
+    pattern: ${EMAIL_SUBJECT_PATTERN:^\\[系统通知\\]\\s+.*$}
+  attachment:
+    save-path: ${EMAIL_ATTACHMENT_SAVE_PATH:./attachments}
+
 # 日志配置（测试环境）
 logging:
   level:
     root: INFO
     com.petvetai.app.mapper: DEBUG
     dev.langchain4j: INFO  # LangChain4j 日志
+    com.petvetai.app.service.EmailReaderService: DEBUG  # 邮件读取服务日志
 
