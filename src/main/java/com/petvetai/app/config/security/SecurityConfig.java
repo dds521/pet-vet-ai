@@ -16,7 +16,7 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/pet/**", "/actuator/**", "/api/auth/**").permitAll() // 暂时开放用于测试
+                .requestMatchers("/api/pet/**", "/actuator/**", "/api/auth/**", "/api/sentinel/**").permitAll() // 暂时开放用于测试
                 .anyRequest().authenticated()
             );
         

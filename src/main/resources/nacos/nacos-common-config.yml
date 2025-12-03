@@ -76,11 +76,63 @@ spring:
           url-patterns: /**
       compatibility-verifier:
         enabled: false
-      # 配置 Sentinel 在 Dashboard 不可用时的行为
-      # 如果 Dashboard 连接失败，只记录警告，不影响应用启动
+      # Sentinel 规则持久化到 Nacos
+      # 配置说明：
+      # 1. 规则存储在 Nacos 配置中心，应用重启后规则不会丢失
+      # 2. 在 Sentinel Dashboard 中修改规则后，会自动同步到 Nacos
+      # 3. Nacos 中的规则变更会自动推送到应用，实现动态更新
+      # 4. 如果 Nacos 连接失败，Sentinel 会使用内存规则（不影响应用启动）
       datasource:
-        # 可以配置多个数据源，如果某个数据源连接失败，不影响其他数据源
-        # 这里不配置具体数据源，使用默认的内存规则，避免连接失败
+        # 流控规则（Flow Rules）
+        flow:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+            namespace: ${NACOS_NAMESPACE:}
+            data-id: ${spring.application.name}-flow-rules
+            group-id: ${NACOS_GROUP:DEFAULT_GROUP}
+            rule-type: flow
+            # 数据格式：JSON
+            # 示例：[{"resource":"/api/test","limitApp":"default","grade":1,"count":10,"strategy":0,"controlBehavior":0,"clusterMode":false}]
+        # 降级规则（Degrade Rules）
+        degrade:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+            namespace: ${NACOS_NAMESPACE:}
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: ${NACOS_GROUP:DEFAULT_GROUP}
+            rule-type: degrade
+            # 数据格式：JSON
+            # 示例：[{"resource":"/api/test","grade":0,"count":100,"timeWindow":10}]
+        # 系统规则（System Rules）
+        system:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+            namespace: ${NACOS_NAMESPACE:}
+            data-id: ${spring.application.name}-system-rules
+            group-id: ${NACOS_GROUP:DEFAULT_GROUP}
+            rule-type: system
+            # 数据格式：JSON
+            # 示例：[{"avgRt":1000,"maxThread":10,"qps":1000}]
+        # 授权规则（Authority Rules）
+        authority:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+            namespace: ${NACOS_NAMESPACE:}
+            data-id: ${spring.application.name}-authority-rules
+            group-id: ${NACOS_GROUP:DEFAULT_GROUP}
+            rule-type: authority
+            # 数据格式：JSON
+            # 示例：[{"resource":"/api/test","limitApp":"app1","strategy":0}]
+        # 热点参数规则（Param Flow Rules）
+        param-flow:
+          nacos:
+            server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+            namespace: ${NACOS_NAMESPACE:}
+            data-id: ${spring.application.name}-param-flow-rules
+            group-id: ${NACOS_GROUP:DEFAULT_GROUP}
+            rule-type: param-flow
+            # 数据格式：JSON
+            # 示例：[{"resource":"/api/test","paramIdx":0,"count":10,"grade":1}]
   ai:
     # AI 提供商类型：openai、deepseek 或 grok（默认使用 deepseek）
     provider:
